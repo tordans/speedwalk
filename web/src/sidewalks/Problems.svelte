@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
   import type { Map } from "maplibre-gl";
   import type { Feature, FeatureCollection, LineString, Point } from "geojson";
   import { backend } from "../";
@@ -26,6 +24,20 @@
   let idx = $state(0);
   let showAll = $state(true);
   let filterType = $state("");
+
+  // TODO Maybe derived+bindable?
+  $effect(() => {
+    drawProblems = gj.features.length
+      ? showAll
+        ? gj
+        : { type: "FeatureCollection", features: [gj.features[idx]] }
+      : emptyGeojson();
+  });
+  $effect(() => {
+    if (gj.features.length && idx != -1 && !showAll) {
+      showFeature(gj.features[idx]);
+    }
+  });
 
   function refresh() {
     gj = JSON.parse($backend!.findProblems());
@@ -58,18 +70,6 @@
       });
     }
   }
-  run(() => {
-    drawProblems = gj.features.length
-      ? showAll
-        ? gj
-        : { type: "FeatureCollection", features: [gj.features[idx]] }
-      : emptyGeojson();
-  });
-  run(() => {
-    if (gj.features.length && idx != -1 && !showAll) {
-      showFeature(gj.features[idx]);
-    }
-  });
 </script>
 
 <div class="card mb-3">

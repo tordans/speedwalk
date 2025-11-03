@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
   import Edits from "../Edits.svelte";
   import { backend, mutationCounter } from "../";
   import { colors, type NodeProps, type WayProps } from "./";
@@ -16,6 +14,7 @@
     Popup,
   } from "svelte-maplibre";
   import { SplitComponent } from "svelte-utils/two_column_layout";
+  import { untrack } from "svelte";
   import {
     isPoint,
     isLine,
@@ -51,7 +50,13 @@
   let driveOnLeft = $state(true);
   let onlyMakeSeverances = $state(true);
 
-  function updateModel(mutationCounter: number) {
+  let pinnedWaySides = $derived(
+    pinnedWay
+      ? JSON.parse($backend!.getSideLocations(BigInt(pinnedWay.properties.id)))
+      : emptyGeojson(),
+  );
+
+  function updateModel() {
     nodes = JSON.parse($backend!.getNodes());
     ways = JSON.parse($backend!.getWays());
 
@@ -60,6 +65,13 @@
       pinnedWay = ways.features.find((f) => f.id == findId)!;
     }
   }
+  $effect(() => {
+    if ($mutationCounter) {
+      untrack(() => {
+        updateModel();
+      });
+    }
+  });
 
   function onMapClick(e: MapMouseEvent) {
     pinnedWay = null;
@@ -142,14 +154,6 @@
     }
     return emptyGeojson();
   }
-  run(() => {
-    updateModel($mutationCounter);
-  });
-  let pinnedWaySides = $derived(
-    pinnedWay
-      ? JSON.parse($backend!.getSideLocations(BigInt(pinnedWay.properties.id)))
-      : emptyGeojson(),
-  );
 </script>
 
 <SplitComponent>

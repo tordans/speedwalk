@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
   import { downloadGeneratedFile } from "svelte-utils";
   import { backend, mutationCounter } from "./";
   import { uploadChangeset } from "osm-api";
@@ -8,7 +6,7 @@
   let cmds: any[] = $state([]);
   let idx = $state(0);
 
-  run(() => {
+  $effect(() => {
     if ($mutationCounter > 0) {
       cmds = $backend ? JSON.parse($backend.getEdits()) : [];
       idx = 0;

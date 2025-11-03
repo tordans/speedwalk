@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
   import { backend, mutationCounter, prettyPrintDistance, sum } from "../";
   import { colors } from "./";
 
@@ -14,7 +12,7 @@
   }
 
   let metrics: Metrics = $state(JSON.parse($backend!.getMetrics()));
-  run(() => {
+  $effect(() => {
     if ($mutationCounter) {
       metrics = JSON.parse($backend!.getMetrics());
     }
