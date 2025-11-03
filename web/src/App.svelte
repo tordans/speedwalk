@@ -16,11 +16,7 @@
   } from "svelte-utils/map";
   import { OverpassSelector } from "svelte-utils/overpass";
   import { Loading } from "svelte-utils";
-  import {
-    mapContents,
-    sidebarContents,
-    Layout,
-  } from "svelte-utils/two_column_layout";
+  import { Layout, leftTarget } from "svelte-utils/two_column_layout";
   import * as backendPkg from "../../backend/pkg";
   import SidewalksMode from "./sidewalks/SidewalksMode.svelte";
 
@@ -95,17 +91,6 @@
   function clear() {
     $backend = null;
   }
-
-  let sidebarDiv: HTMLDivElement;
-  let mapDiv: HTMLDivElement;
-  $: if (sidebarDiv && $sidebarContents) {
-    sidebarDiv.innerHTML = "";
-    sidebarDiv.appendChild($sidebarContents);
-  }
-  $: if (mapDiv && $mapContents) {
-    mapDiv.innerHTML = "";
-    mapDiv.appendChild($mapContents);
-  }
 </script>
 
 <svelte:head>
@@ -115,7 +100,7 @@
 <Loading {loading} />
 
 <Layout>
-  <div slot="left">
+  {#snippet left()}
     <h1>Speedwalk</h1>
 
     {#if $backend}
@@ -166,32 +151,32 @@
 
     <Auth />
 
-    <div bind:this={sidebarDiv} />
-  </div>
+    <div bind:this={leftTarget.value}></div>
+  {/snippet}
 
-  <div slot="main" style="position:relative; width: 100%; height: 100vh;">
-    <MapLibre
-      {style}
-      hash
-      bind:map
-      on:error={(e) => {
-        // @ts-ignore ErrorEvent isn't exported
-        console.log(e.detail.error);
-      }}
-    >
-      <StandardControls {map} />
-      <!--<MapContextMenu {map} />-->
-      <Basemaps bind:style choice="Maptiler OpenStreetMap" />
+  {#snippet main()}
+    <div style="position:relative; width: 100%; height: 100vh;">
+      <MapLibre
+        {style}
+        hash
+        bind:map
+        on:error={(e) => {
+          // @ts-ignore ErrorEvent isn't exported
+          console.log(e.detail.error);
+        }}
+      >
+        <StandardControls {map} />
+        <!--<MapContextMenu {map} />-->
+        <Basemaps bind:style choice="Maptiler OpenStreetMap" />
 
-      {#if $backend && map}
-        <div bind:this={mapDiv} />
-
-        {#if $mode == "sidewalks"}
-          <SidewalksMode {map} />
+        {#if $backend && map}
+          {#if $mode == "sidewalks"}
+            <SidewalksMode {map} />
+          {/if}
+        {:else}
+          <PolygonToolLayer />
         {/if}
-      {:else}
-        <PolygonToolLayer />
-      {/if}
-    </MapLibre>
-  </div>
+      </MapLibre>
+    </div>
+  {/snippet}
 </Layout>

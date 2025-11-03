@@ -30,7 +30,7 @@
       style:width={`${(100 * length) / total}%`}
       style:height="100%"
       style:background-color={colors[castKey(key)]}
-    />
+      ></div>
     <div style:position="relative">{key}: {prettyPrintDistance(length)}</div>
   </div>
 {/each}
