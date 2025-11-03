@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from "svelte/legacy";
+
   import { backend, mutationCounter, prettyPrintDistance, sum } from "../";
   import { colors } from "./";
 
@@ -11,10 +13,12 @@
     };
   }
 
-  let metrics: Metrics = JSON.parse($backend!.getMetrics());
-  $: if ($mutationCounter) {
-    metrics = JSON.parse($backend!.getMetrics());
-  }
+  let metrics: Metrics = $state(JSON.parse($backend!.getMetrics()));
+  run(() => {
+    if ($mutationCounter) {
+      metrics = JSON.parse($backend!.getMetrics());
+    }
+  });
 
   let total = sum(Object.values(metrics.total_length_meters));
 
@@ -30,7 +34,7 @@
       style:width={`${(100 * length) / total}%`}
       style:height="100%"
       style:background-color={colors[castKey(key)]}
-      ></div>
+    ></div>
     <div style:position="relative">{key}: {prettyPrintDistance(length)}</div>
   </div>
 {/each}

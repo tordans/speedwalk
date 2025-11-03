@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
 
   let loggedInUser: { name: string; uid: number; avatarUrl: string } | null =
-    null;
+    $state(null);
 
   onMount(async () => {
     await OSM.authReady;
@@ -39,7 +39,7 @@
     <img src={loggedInUser.avatarUrl} alt="OSM avatar" />
   {/if}
 
-  <button class="btn btn-danger" on:click={logout}>Logout</button>
+  <button class="btn btn-danger" onclick={logout}>Logout</button>
 {:else}
-  <button class="btn btn-primary" on:click={login}>Login</button>
+  <button class="btn btn-primary" onclick={login}>Login</button>
 {/if}

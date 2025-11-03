@@ -3,7 +3,11 @@
   import { backend, mutationCounter } from "../";
   import { type WayProps } from "./";
 
-  export let pinnedWay: Feature<LineString, WayProps>;
+  interface Props {
+    pinnedWay: Feature<LineString, WayProps>;
+  }
+
+  let { pinnedWay }: Props = $props();
 
   function setTags(tags: Array<string[]>) {
     $backend!.editSetTags(BigInt(pinnedWay.properties.id), tags);
@@ -37,7 +41,7 @@
       <div>
         <button
           class="btn btn-secondary mb-1"
-          on:click={() => setTags([["sidewalk:both", "separate"]])}
+          onclick={() => setTags([["sidewalk:both", "separate"]])}
         >
           sidewalk:both = separate
         </button>
@@ -46,7 +50,7 @@
       <div>
         <button
           class="btn btn-secondary mb-1"
-          on:click={() =>
+          onclick={() =>
             setTags([
               ["sidewalk:left", "separate"],
               ["sidewalk:right", "no"],
@@ -59,7 +63,7 @@
       <div>
         <button
           class="btn btn-secondary mb-1"
-          on:click={() =>
+          onclick={() =>
             setTags([
               ["sidewalk:right", "separate"],
               ["sidewalk:left", "no"],
@@ -73,7 +77,7 @@
         <div>
           <button
             class="btn btn-secondary mb-1"
-            on:click={() => setTags([["sidewalk", value]])}
+            onclick={() => setTags([["sidewalk", value]])}
           >
             sidewalk = {value}
           </button>
@@ -85,7 +89,7 @@
       <div>
         <button
           class="btn btn-secondary mb-1"
-          on:click={() => setTags([["footway", "sidewalk"]])}
+          onclick={() => setTags([["footway", "sidewalk"]])}
         >
           footway = sidewalk
         </button>
@@ -94,7 +98,7 @@
       <div>
         <button
           class="btn btn-secondary mb-1"
-          on:click={() => setTags([["footway", "crossing"]])}
+          onclick={() => setTags([["footway", "crossing"]])}
         >
           footway = crossing
         </button>

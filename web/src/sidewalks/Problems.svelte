@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from "svelte/legacy";
+
   import type { Map } from "maplibre-gl";
   import type { Feature, FeatureCollection, LineString, Point } from "geojson";
   import { backend } from "../";
@@ -6,18 +8,24 @@
   import { bbox, emptyGeojson } from "svelte-utils/map";
   import PrevNext from "./PrevNext.svelte";
 
-  export let map: Map;
-  export let drawProblems: FeatureCollection;
+  interface Props {
+    map: Map;
+    drawProblems: FeatureCollection;
+  }
 
-  let gj = emptyGeojson() as FeatureCollection<
-    LineString | Point,
-    { problem: string; osm: string }
-  >;
-  let problemTypes = new Set<string>();
+  let { map, drawProblems = $bindable() }: Props = $props();
 
-  let idx = 0;
-  let showAll = true;
-  let filterType = "";
+  let gj = $state(
+    emptyGeojson() as FeatureCollection<
+      LineString | Point,
+      { problem: string; osm: string }
+    >,
+  );
+  let problemTypes = $state(new Set<string>());
+
+  let idx = $state(0);
+  let showAll = $state(true);
+  let filterType = $state("");
 
   function refresh() {
     gj = JSON.parse($backend!.findProblems());
@@ -37,16 +45,6 @@
     }
   }
 
-  $: drawProblems = gj.features.length
-    ? showAll
-      ? gj
-      : { type: "FeatureCollection", features: [gj.features[idx]] }
-    : emptyGeojson();
-
-  $: if (gj.features.length && idx != -1 && !showAll) {
-    showFeature(gj.features[idx]);
-  }
-
   function showFeature(f: Feature) {
     if (f.geometry.type == "Point") {
       map.flyTo({
@@ -60,19 +58,31 @@
       });
     }
   }
+  run(() => {
+    drawProblems = gj.features.length
+      ? showAll
+        ? gj
+        : { type: "FeatureCollection", features: [gj.features[idx]] }
+      : emptyGeojson();
+  });
+  run(() => {
+    if (gj.features.length && idx != -1 && !showAll) {
+      showFeature(gj.features[idx]);
+    }
+  });
 </script>
 
 <div class="card mb-3">
   <div class="card-header">Find OSM problems</div>
   <div class="card-body">
-    <button class="btn btn-secondary mb-3" on:click={refresh}>
+    <button class="btn btn-secondary mb-3" onclick={refresh}>
       Find problems
     </button>
 
     {#if gj.features.length}
       <label>
         Only show problems
-        <select class="form-select" bind:value={filterType} on:change={refresh}>
+        <select class="form-select" bind:value={filterType} onchange={refresh}>
           <option value="">All</option>
           {#each problemTypes as x}
             <option value={x}>{x}</option>

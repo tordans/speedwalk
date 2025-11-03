@@ -20,12 +20,12 @@
   import * as backendPkg from "../../backend/pkg";
   import SidewalksMode from "./sidewalks/SidewalksMode.svelte";
 
-  let loading = "";
-  let map: Map | undefined;
-  let style = basemapStyles["Maptiler OpenStreetMap"];
+  let loading = $state("");
+  let map: Map | undefined = $state();
+  let style = $state(basemapStyles["Maptiler OpenStreetMap"]);
 
-  let examples: string[] = [];
-  let loadExample = "";
+  let examples: string[] = $state([]);
+  let loadExample = $state("");
 
   onMount(async () => {
     await backendPkg.default();
@@ -55,7 +55,7 @@
     }
   }
 
-  let fileInput: HTMLInputElement;
+  let fileInput: HTMLInputElement = $state();
   async function loadFile(e: Event) {
     try {
       loading = "Loading from file";
@@ -104,7 +104,7 @@
     <h1>Speedwalk</h1>
 
     {#if $backend}
-      <button class="btn btn-secondary" on:click={clear}>
+      <button class="btn btn-secondary" onclick={clear}>
         Load another area
       </button>
     {:else if map}
@@ -115,7 +115,7 @@
             <select
               class="form-select"
               bind:value={loadExample}
-              on:change={loadFromExample}
+              onchange={loadFromExample}
             >
               {#each examples as x}
                 <option value={x}>{x}</option>
@@ -133,7 +133,7 @@
           <input
             class="form-control"
             bind:this={fileInput}
-            on:change={loadFile}
+            onchange={loadFile}
             type="file"
           />
         </label>

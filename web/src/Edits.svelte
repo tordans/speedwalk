@@ -1,15 +1,19 @@
 <script lang="ts">
+  import { run } from "svelte/legacy";
+
   import { downloadGeneratedFile } from "svelte-utils";
   import { backend, mutationCounter } from "./";
   import { uploadChangeset } from "osm-api";
 
-  let cmds: any[] = [];
-  let idx = 0;
+  let cmds: any[] = $state([]);
+  let idx = $state(0);
 
-  $: if ($mutationCounter > 0) {
-    cmds = $backend ? JSON.parse($backend.getEdits()) : [];
-    idx = 0;
-  }
+  run(() => {
+    if ($mutationCounter > 0) {
+      cmds = $backend ? JSON.parse($backend.getEdits()) : [];
+      idx = 0;
+    }
+  });
 
   function prev() {
     idx--;
@@ -66,25 +70,23 @@
 
 <h3>{cmds.length} {cmds.length == 1 ? "edit" : "edits"}</h3>
 {#if cmds.length > 0}
-  <button class="btn btn-danger" on:click={clear}>Clear edits</button>
-  <button class="btn btn-danger" on:click={undo} disabled={cmds.length == 0}>
+  <button class="btn btn-danger" onclick={clear}>Clear edits</button>
+  <button class="btn btn-danger" onclick={undo} disabled={cmds.length == 0}>
     Undo ({cmds.length})
   </button>
-  <button class="btn btn-secondary" on:click={downloadOsc}>
-    Download .osc
-  </button>
-  <button class="btn btn-secondary" on:click={uploadOsc}>
+  <button class="btn btn-secondary" onclick={downloadOsc}>Download .osc</button>
+  <button class="btn btn-secondary" onclick={uploadOsc}>
     Upload changeset
   </button>
 
   <div style="display: flex; justify-content: space-between">
-    <button class="btn btn-secondary" on:click={prev} disabled={idx == 0}>
+    <button class="btn btn-secondary" onclick={prev} disabled={idx == 0}>
       Previous
     </button>
     <span>{idx + 1} / {cmds.length}</span>
     <button
       class="btn btn-secondary"
-      on:click={next}
+      onclick={next}
       disabled={idx == cmds.length - 1}
     >
       Next
