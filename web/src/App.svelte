@@ -19,6 +19,7 @@
   import { Layout, leftTarget } from "svelte-utils/two_column_layout";
   import * as backendPkg from "../../backend/pkg";
   import SidewalksMode from "./sidewalks/SidewalksMode.svelte";
+  import type { Feature, Polygon } from "geojson";
 
   let loading = $state("");
   let map: Map | undefined = $state();
@@ -27,11 +28,11 @@
     await backendPkg.default();
   });
 
-  let fileInput: HTMLInputElement = $state();
+  let fileInput: HTMLInputElement | undefined = $state();
   async function loadFile(e: Event) {
     try {
       loading = "Loading from file";
-      let bytes = await fileInput.files![0].arrayBuffer();
+      let bytes = await fileInput!.files![0].arrayBuffer();
       $backend = new backendPkg.Speedwalk(new Uint8Array(bytes));
       zoomFit();
     } catch (err) {
@@ -153,7 +154,7 @@
         style={initialStyle}
         hash
         bind:map
-        on:error={(e) => {
+        onerror={(e) => {
           console.log(e.error);
         }}
       >

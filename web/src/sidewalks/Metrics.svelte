@@ -20,7 +20,7 @@
     }
   });
 
-  let total = sum(Object.values(metrics.total_length_meters));
+  let total = $derived(sum(Object.values(metrics.total_length_meters)));
 
   function castKey(key: string): keyof typeof colors {
     return key as keyof typeof colors;

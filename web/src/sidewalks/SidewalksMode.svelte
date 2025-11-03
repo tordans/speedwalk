@@ -61,9 +61,9 @@
     }
   }
 
-  function onMapClick(e: CustomEvent<MapMouseEvent>) {
+  function onMapClick(e: MapMouseEvent) {
     pinnedWay = null;
-    for (let rendered of map.queryRenderedFeatures(e.detail.point, {
+    for (let rendered of map.queryRenderedFeatures(e.point, {
       layers: ["ways"],
     })) {
       // Find the original feature in the GJ, to avoid having to parse nested properties
@@ -73,8 +73,8 @@
   }
 
   // TODO Move to MapContextMenu after svelte 5 upgrade
-  function onRightClick(e: CustomEvent<MapMouseEvent>) {
-    $backend!.editAddNewCrossing(e.detail.lngLat.lng, e.detail.lngLat.lat);
+  function onRightClick(e: MapMouseEvent) {
+    $backend!.editAddNewCrossing(e.lngLat.lng, e.lngLat.lat);
     $mutationCounter++;
   }
 
@@ -193,11 +193,11 @@
       </div>
     </div>
 
-    <Problems bind:map bind:drawProblems />
+    <Problems {map} bind:drawProblems />
   {/snippet}
 
   {#snippet main()}
-    <MapEvents on:click={onMapClick} on:contextmenu={onRightClick} />
+    <MapEvents onclick={onMapClick} oncontextmenu={onRightClick} />
 
     <GeoJSON data={pinnedWay || emptyGeojson()}>
       <LineLayer
