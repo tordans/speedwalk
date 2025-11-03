@@ -41,9 +41,9 @@
     }
   }
 
-  async function gotXml(e: CustomEvent<{ xml: string }>) {
+  async function gotXml(xml: string, boundary: Feature<Polygon>) {
     try {
-      let bytes = new TextEncoder().encode(e.detail.xml);
+      let bytes = new TextEncoder().encode(xml);
       $backend = new backendPkg.Speedwalk(new Uint8Array(bytes));
       zoomFit();
     } catch (err) {
@@ -136,9 +136,9 @@
 
       <OverpassSelector
         {map}
-        on:gotXml={gotXml}
-        on:loading={(e) => (loading = e.detail)}
-        on:error={(e) => window.alert(e.detail)}
+        {gotXml}
+        onloading={(msg) => (loading = msg)}
+        onerror={(err) => window.alert(err)}
       />
     {/if}
 

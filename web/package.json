@@ -30,7 +30,7 @@
   "dependencies": {
     "bootstrap": "^5.3.8",
     "osm-api": "^3.3.0",
-    "svelte-maplibre": "^1.2.4",
+    "svelte-maplibre": "=1.2.3",
     "svelte-utils": "github:a-b-street/svelte-utils"
   }
 }
