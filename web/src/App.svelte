@@ -3,8 +3,8 @@
   import favicon from "../assets/favicon.ico?url";
   import { MapLibre } from "svelte-maplibre";
   import { PolygonToolLayer } from "maplibre-draw-polygon";
-  import { onMount } from "svelte";
-  import { backend, mode } from "./";
+  import { onMount, untrack } from "svelte";
+  import { backend } from "./";
   import "bootstrap/dist/css/bootstrap.min.css";
   import type { Map } from "maplibre-gl";
   import {
@@ -22,38 +22,10 @@
 
   let loading = $state("");
   let map: Map | undefined = $state();
-  let style = $state(basemapStyles["Maptiler OpenStreetMap"]);
-
-  let examples: string[] = $state([]);
-  let loadExample = $state("");
 
   onMount(async () => {
     await backendPkg.default();
-
-    try {
-      let resp = await fetch("example_osm/list");
-      if (resp.ok) {
-        examples = await resp.json();
-      }
-    } catch (err) {}
   });
-
-  async function loadFromExample() {
-    if (loadExample.length == 0) {
-      return;
-    }
-    try {
-      loading = `Loading ${loadExample}`;
-      let resp = await fetch(`example_osm/${loadExample}`);
-      let bytes = await resp.arrayBuffer();
-      $backend = new backendPkg.Speedwalk(new Uint8Array(bytes));
-      zoomFit();
-    } catch (err) {
-      window.alert(`Bad input file: ${err}`);
-    } finally {
-      loading = "";
-    }
-  }
 
   let fileInput: HTMLInputElement = $state();
   async function loadFile(e: Event) {
@@ -91,6 +63,46 @@
   function clear() {
     $backend = null;
   }
+
+  let basemap = $state("Maptiler OpenStreetMap");
+  // svelte-ignore state_referenced_locally
+  let initialStyle = basemapStyles.get(basemap)!;
+  // TODO Upstream to svelte-maplibre. It feels a bit brittle how we detect the sources and layers created here, vs from the basemap
+  $effect(() => {
+    if (basemap) {
+      untrack(() => {
+        map?.setStyle(basemapStyles.get(basemap)!, {
+          transformStyle: (previousStyle, nextStyle) => {
+            if (!previousStyle) {
+              return nextStyle;
+            }
+
+            let customLayers = previousStyle.layers.filter((l) =>
+              ["circle-", "line-", "fill-", "heatmap-", "symbol-"].some(
+                (prefix) => l.id.startsWith(prefix),
+              ),
+            );
+            let layers = nextStyle.layers.concat(customLayers);
+            let sources = nextStyle.sources;
+
+            for (let [key, value] of Object.entries(
+              previousStyle.sources || {},
+            )) {
+              if (key.startsWith("geojson-") || key.startsWith("heatmap")) {
+                sources[key] = value;
+              }
+            }
+
+            return {
+              ...nextStyle,
+              sources: sources,
+              layers: layers,
+            };
+          },
+        });
+      });
+    }
+  });
 </script>
 
 <svelte:head>
@@ -108,25 +120,6 @@
         Load another area
       </button>
     {:else if map}
-      {#if examples.length}
-        <div>
-          <label>
-            Load an example
-            <select
-              class="form-select"
-              bind:value={loadExample}
-              onchange={loadFromExample}
-            >
-              {#each examples as x}
-                <option value={x}>{x}</option>
-              {/each}
-            </select>
-          </label>
-        </div>
-
-        <p class="fst-italic my-3">or...</p>
-      {/if}
-
       <div>
         <label class="form-label">
           Load an osm.pbf or osm.xml file
@@ -157,22 +150,19 @@
   {#snippet main()}
     <div style="position:relative; width: 100%; height: 100vh;">
       <MapLibre
-        {style}
+        style={initialStyle}
         hash
         bind:map
         on:error={(e) => {
-          // @ts-ignore ErrorEvent isn't exported
-          console.log(e.detail.error);
+          console.log(e.error);
         }}
       >
         <StandardControls {map} />
         <!--<MapContextMenu {map} />-->
-        <Basemaps bind:style choice="Maptiler OpenStreetMap" />
+        <Basemaps bind:basemap />
 
         {#if $backend && map}
-          {#if $mode == "sidewalks"}
-            <SidewalksMode {map} />
-          {/if}
+          <SidewalksMode {map} />
         {:else}
           <PolygonToolLayer />
         {/if}
