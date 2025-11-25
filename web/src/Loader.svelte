@@ -8,11 +8,15 @@
   import * as backendPkg from "../../backend/pkg";
   import { backend, refreshLoadingScreen } from "./";
 
-  export let map: Map;
+  interface Props {
+    map: Map;
+  }
 
-  let loading = "";
+  let { map }: Props = $props();
 
-  let fileInput: HTMLInputElement | undefined;
+  let loading = $state("");
+
+  let fileInput: HTMLInputElement | undefined = $state();
   async function loadFile(e: Event) {
     try {
       loading = "Loading from file";
@@ -52,30 +56,34 @@
 <Loading {loading} />
 
 <SplitComponent>
-  <div slot="sidebar">
+  {#snippet sidebar()}
     <div>
-      <label class="form-label">
-        Load an osm.pbf or osm.xml file
-        <input
-          class="form-control"
-          bind:this={fileInput}
-          on:change={loadFile}
-          type="file"
-        />
-      </label>
+      <div>
+        <label class="form-label">
+          Load an osm.pbf or osm.xml file
+          <input
+            class="form-control"
+            bind:this={fileInput}
+            onchange={loadFile}
+            type="file"
+          />
+        </label>
+      </div>
+
+      <p class="fst-italic my-3">or...</p>
+
+      <OverpassSelector
+        {map}
+        on:gotXml={gotXml}
+        on:loading={(e) => (loading = e.detail)}
+        on:error={(e) => window.alert(e.detail)}
+      />
     </div>
+  {/snippet}
 
-    <p class="fst-italic my-3">or...</p>
-
-    <OverpassSelector
-      {map}
-      on:gotXml={gotXml}
-      on:loading={(e) => (loading = e.detail)}
-      on:error={(e) => window.alert(e.detail)}
-    />
-  </div>
-
-  <div slot="map">
-    <PolygonToolLayer />
-  </div>
+  {#snippet map()}
+    <div>
+      <PolygonToolLayer />
+    </div>
+  {/snippet}
 </SplitComponent>

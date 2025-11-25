@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { run } from "svelte/legacy";
+
   import { Checkbox } from "svelte-utils";
   import { backend, mutationCounter, prettyPrintDistance, sum } from "../";
   import { colors } from "./";
 
-  export let showKinds: Record<string, boolean>;
+  interface Props {
+    showKinds: Record<string, boolean>;
+  }
+
+  let { showKinds = $bindable() }: Props = $props();
 
   let roads = [
     ["RoadWithSeparate", "With separate sidewalks"],
@@ -22,18 +28,19 @@
     total_length_meters: Record<keyof typeof colors, number>;
   }
 
-  let metrics: Metrics = JSON.parse($backend!.getMetrics());
-  $: if ($mutationCounter && $backend) {
-    metrics = JSON.parse($backend.getMetrics());
-  }
-
-  $: total = sum(
-    roads.map(([x, _]) => metrics.total_length_meters[castKey(x)]),
-  );
+  let metrics: Metrics = $state(JSON.parse($backend!.getMetrics()));
 
   function castKey(key: string): keyof typeof colors {
     return key as keyof typeof colors;
   }
+  run(() => {
+    if ($mutationCounter && $backend) {
+      metrics = JSON.parse($backend.getMetrics());
+    }
+  });
+  let total = $derived(
+    sum(roads.map(([x, _]) => metrics.total_length_meters[castKey(x)])),
+  );
 </script>
 
 <div class="card mb-3">

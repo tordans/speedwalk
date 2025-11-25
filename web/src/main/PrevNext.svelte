@@ -1,6 +1,10 @@
 <script lang="ts">
-  export let list: any[];
-  export let idx = 0;
+  interface Props {
+    list: any[];
+    idx?: number;
+  }
+
+  let { list, idx = $bindable(0) }: Props = $props();
 
   function prev() {
     if (idx != 0) {
@@ -18,7 +22,7 @@
 <div
   style="display: flex; justify-content: space-between; align-items: center;"
 >
-  <button disabled={idx == 0} on:click={prev}>Previous</button>
+  <button disabled={idx == 0} onclick={prev}>Previous</button>
   {idx + 1} / {list.length}
-  <button disabled={idx == list.length - 1} on:click={next}>Next</button>
+  <button disabled={idx == list.length - 1} onclick={next}>Next</button>
 </div>
