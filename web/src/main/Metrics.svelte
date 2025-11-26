@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
+  import { untrack } from "svelte";
   import { Checkbox } from "svelte-utils";
   import { backend, mutationCounter, prettyPrintDistance, sum } from "../";
   import { colors } from "./";
@@ -28,19 +27,23 @@
     total_length_meters: Record<keyof typeof colors, number>;
   }
 
+  // TODO Derived?
   let metrics: Metrics = $state(JSON.parse($backend!.getMetrics()));
+  $effect(() => {
+    if ($mutationCounter > 0 && $backend) {
+      untrack(() => {
+        metrics = JSON.parse($backend.getMetrics());
+      });
+    }
+  });
+
+  let total = $derived(
+    sum(roads.map(([x, _]) => metrics.total_length_meters[castKey(x)])),
+  );
 
   function castKey(key: string): keyof typeof colors {
     return key as keyof typeof colors;
   }
-  run(() => {
-    if ($mutationCounter && $backend) {
-      metrics = JSON.parse($backend.getMetrics());
-    }
-  });
-  let total = $derived(
-    sum(roads.map(([x, _]) => metrics.total_length_meters[castKey(x)])),
-  );
 </script>
 
 <div class="card mb-3">

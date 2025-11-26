@@ -88,7 +88,7 @@
         />
         <h2 class="me-3">Speedwalk</h2>
         <!-- svelte-ignore a11y_invalid_attribute -->
-        <a href="#" onclick={() => (show = true)}>
+        <a href="#" onclick={() => (show = true)} title="About Speedwalk">
           <i class="fa-solid fa-circle-info"></i>
         </a>
       </div>

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
+  import { untrack } from "svelte";
   import { downloadGeneratedFile, Loading } from "svelte-utils";
   import {
     backend,
@@ -20,11 +19,13 @@
   let idx = $state(0);
   let loading = $state("");
 
-  run(() => {
+  $effect(() => {
     if ($mutationCounter > 0) {
-      cmds = $backend ? JSON.parse($backend.getEdits()) : [];
-      idx = 0;
-      anyEdits = cmds.length > 0;
+      untrack(() => {
+        cmds = $backend ? JSON.parse($backend.getEdits()) : [];
+        idx = 0;
+        anyEdits = cmds.length > 0;
+      });
     }
   });
 

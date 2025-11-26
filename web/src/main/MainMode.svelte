@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
   import Edits from "./Edits.svelte";
   import BulkOperations from "./BulkOperations.svelte";
   import {
@@ -47,6 +45,8 @@
   } from "geojson";
   import Metrics from "./Metrics.svelte";
   import WayDetails from "./WayDetails.svelte";
+  import { watch } from "runed";
+  import { untrack } from "svelte";
 
   interface Props {
     map: Map;
@@ -74,22 +74,23 @@
   );
 
   let showProblemDetails = $state(true);
-  let drawProblemDetails = $state(
-    emptyGeojson() as FeatureCollection<
-      Geometry,
-      { label: string; color: string }
-    >,
-  );
+  let drawProblemDetails = $derived(problemDetails(pinnedWay));
   let showProblems = $state(false);
   let showProblemTypes: Record<string, boolean> = $state(
     Object.fromEntries(problemTypes.map((k) => [k, true])),
+  );
+
+  let pinnedWaySides = $derived(
+    $backend && pinnedWay
+      ? JSON.parse($backend.getSideLocations(BigInt(pinnedWay.properties.id)))
+      : emptyGeojson(),
   );
 
   let anyEdits = $state(false);
 
   let loading = $state("");
 
-  async function updateModel(mutationCounter: number) {
+  async function updateModel() {
     loading = "Recalculating model";
     await refreshLoadingScreen();
     try {
@@ -113,6 +114,12 @@
       pinnedWay = ways.features.find((f) => f.id == findId)!;
     }
   }
+  // TODO watch helper
+  $effect(() => {
+    if ($mutationCounter >= 0) {
+      untrack(() => updateModel());
+    }
+  });
 
   function onMapClick(e: MapMouseEvent) {
     pinnedWay = null;
@@ -146,9 +153,7 @@
     return gj as FeatureCollection<Geometry, { label: string; color: string }>;
   }
 
-  function showNodeOrder(
-    pinnedWay: Feature<LineString, WayProps> | null,
-  ): FeatureCollection {
+  function showNodeOrder(): FeatureCollection {
     let gj = emptyGeojson();
     if (pinnedWay) {
       for (let [idx, node] of pinnedWay.properties.node_ids.entries()) {
@@ -162,6 +167,14 @@
     }
     return gj;
   }
+  // TODO Make a helper
+  let nodeOrder = $state(emptyGeojson());
+  watch(
+    () => pinnedWay,
+    () => {
+      nodeOrder = showNodeOrder();
+    },
+  );
 
   function snappedRoad(
     pinnedWay: Feature<LineString, WayProps> | null,
@@ -243,17 +256,6 @@
     }
     $backend = null;
   }
-  run(() => {
-    updateModel($mutationCounter);
-  });
-  let pinnedWaySides = $derived(
-    $backend && pinnedWay
-      ? JSON.parse($backend.getSideLocations(BigInt(pinnedWay.properties.id)))
-      : emptyGeojson(),
-  );
-  run(() => {
-    drawProblemDetails = problemDetails(pinnedWay);
-  });
 </script>
 
 <Loading {loading} />
@@ -395,7 +397,7 @@
       />
     </GeoJSON>
 
-    <GeoJSON data={showNodeOrder(pinnedWay)}>
+    <GeoJSON data={nodeOrder}>
       <SymbolLayer
         id="pinned-node-order"
         paint={{
