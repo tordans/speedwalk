@@ -45,7 +45,6 @@
   } from "geojson";
   import Metrics from "./Metrics.svelte";
   import WayDetails from "./WayDetails.svelte";
-  import { watch } from "runed";
   import { untrack } from "svelte";
 
   interface Props {
@@ -82,7 +81,9 @@
 
   let pinnedWaySides = $derived.by(() => {
     if ($backend && pinnedWay) {
-      return JSON.parse($backend.getSideLocations(BigInt(pinnedWay.properties.id)));
+      return JSON.parse(
+        $backend.getSideLocations(BigInt(pinnedWay.properties.id)),
+      );
     }
     return emptyGeojson();
   });
@@ -168,14 +169,11 @@
     }
     return gj;
   }
-  // TODO Make a helper
-  let nodeOrder = $state(emptyGeojson());
-  watch(
-    () => pinnedWay,
-    () => {
-      nodeOrder = showNodeOrder();
-    },
-  );
+  // TODO Helper?
+  let nodeOrder = $derived.by(() => {
+    pinnedWay;
+    return untrack(showNodeOrder);
+  });
 
   function snappedRoad(
     pinnedWay: Feature<LineString, WayProps> | null,
