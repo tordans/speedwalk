@@ -80,11 +80,12 @@
     Object.fromEntries(problemTypes.map((k) => [k, true])),
   );
 
-  let pinnedWaySides = $derived(
-    $backend && pinnedWay
-      ? JSON.parse($backend.getSideLocations(BigInt(pinnedWay.properties.id)))
-      : emptyGeojson(),
-  );
+  let pinnedWaySides = $derived.by(() => {
+    if ($backend && pinnedWay) {
+      return JSON.parse($backend.getSideLocations(BigInt(pinnedWay.properties.id)));
+    }
+    return emptyGeojson();
+  });
 
   let anyEdits = $state(false);
 
