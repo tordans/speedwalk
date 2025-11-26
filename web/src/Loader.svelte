@@ -7,6 +7,7 @@
   import { OverpassSelector } from "svelte-utils/overpass";
   import * as backendPkg from "../../backend/pkg";
   import { backend, refreshLoadingScreen } from "./";
+  import type { Feature, Polygon } from "geojson";
 
   interface Props {
     map: Map;
@@ -31,11 +32,11 @@
     }
   }
 
-  async function gotXml(e: CustomEvent<{ xml: string }>) {
+  async function gotXml(xml: string, _: Feature<Polygon>) {
     try {
       loading = "Processing Overpass data";
       await refreshLoadingScreen();
-      let bytes = new TextEncoder().encode(e.detail.xml);
+      let bytes = new TextEncoder().encode(xml);
       $backend = new backendPkg.Speedwalk(new Uint8Array(bytes));
       zoomFit();
     } catch (err) {
@@ -56,34 +57,30 @@
 <Loading {loading} />
 
 <SplitComponent>
-  {#snippet sidebar()}
+  {#snippet left()}
     <div>
-      <div>
-        <label class="form-label">
-          Load an osm.pbf or osm.xml file
-          <input
-            class="form-control"
-            bind:this={fileInput}
-            onchange={loadFile}
-            type="file"
-          />
-        </label>
-      </div>
-
-      <p class="fst-italic my-3">or...</p>
-
-      <OverpassSelector
-        {map}
-        on:gotXml={gotXml}
-        on:loading={(e) => (loading = e.detail)}
-        on:error={(e) => window.alert(e.detail)}
-      />
+      <label class="form-label">
+        Load an osm.pbf or osm.xml file
+        <input
+          class="form-control"
+          bind:this={fileInput}
+          onchange={loadFile}
+          type="file"
+        />
+      </label>
     </div>
+
+    <p class="fst-italic my-3">or...</p>
+
+    <OverpassSelector
+      {map}
+      {gotXml}
+      onloading={(msg) => (loading = msg)}
+      onerror={(err) => window.alert(err)}
+    />
   {/snippet}
 
-  {#snippet map()}
-    <div>
-      <PolygonToolLayer />
-    </div>
+  {#snippet main()}
+    <PolygonToolLayer />
   {/snippet}
 </SplitComponent>

@@ -114,9 +114,9 @@
     }
   }
 
-  function onMapClick(e: CustomEvent<MapMouseEvent>) {
+  function onMapClick(e: MapMouseEvent) {
     pinnedWay = null;
-    for (let rendered of map.queryRenderedFeatures(e.detail.point, {
+    for (let rendered of map.queryRenderedFeatures(e.point, {
       layers: ["ways"],
     })) {
       // Find the original feature in the GJ, to avoid having to parse nested properties
@@ -259,228 +259,222 @@
 <Loading {loading} />
 
 <SplitComponent>
-  {#snippet sidebar()}
-    <div>
-      <button class="btn btn-secondary" onclick={clear}>
-        Load another area
-      </button>
+  {#snippet left()}
+    <button class="btn btn-secondary" onclick={clear}>Load another area</button>
 
-      <p>OSM data is from {getOsmTimestamp()}</p>
+    <p>OSM data is from {getOsmTimestamp()}</p>
 
-      <Edits bind:anyEdits />
+    <Edits bind:anyEdits />
 
-      {#if pinnedWay}
-        <WayDetails {pinnedWay} {drawProblemDetails} bind:showProblemDetails />
-      {:else}
-        <BulkOperations />
-      {/if}
-    </div>
+    {#if pinnedWay}
+      <WayDetails {pinnedWay} {drawProblemDetails} bind:showProblemDetails />
+    {:else}
+      <BulkOperations />
+    {/if}
   {/snippet}
 
-  {#snippet map()}
-    <div>
-      <MapEvents on:click={onMapClick} />
+  {#snippet main()}
+    <MapEvents onclick={onMapClick} />
 
-      <GeoJSON data={pinnedWay || emptyGeojson()}>
-        <LineLayer
-          id="pinned"
-          beforeId="Road labels"
-          paint={{
-            "line-width": roadLineWidth(10),
-            "line-color": "cyan",
-            "line-opacity": 0.5,
-          }}
-        />
+    <GeoJSON data={pinnedWay || emptyGeojson()}>
+      <LineLayer
+        id="pinned"
+        beforeId="Road labels"
+        paint={{
+          "line-width": roadLineWidth(10),
+          "line-color": "cyan",
+          "line-opacity": 0.5,
+        }}
+      />
 
-        <SymbolLayer
-          minzoom={12}
-          layout={{
-            "icon-image": "arrow",
-            "icon-size": 1.0,
-            "symbol-placement": "line",
-            "symbol-spacing": 50,
-            "icon-allow-overlap": true,
-          }}
-        />
-      </GeoJSON>
+      <SymbolLayer
+        minzoom={12}
+        layout={{
+          "icon-image": "arrow",
+          "icon-size": 1.0,
+          "symbol-placement": "line",
+          "symbol-spacing": 50,
+          "icon-allow-overlap": true,
+        }}
+      />
+    </GeoJSON>
 
-      <GeoJSON data={snappedRoad(pinnedWay, $debugMode)}>
-        <LineLayer
-          id="snapped-to-pinned"
-          beforeId="Road labels"
-          paint={{
-            "line-width": roadLineWidth(10),
-            "line-color": "blue",
-            "line-opacity": 0.5,
-            "line-offset": ["case", ["get", "left"], -5, 5],
-          }}
-        />
-      </GeoJSON>
+    <GeoJSON data={snappedRoad(pinnedWay, $debugMode)}>
+      <LineLayer
+        id="snapped-to-pinned"
+        beforeId="Road labels"
+        paint={{
+          "line-width": roadLineWidth(10),
+          "line-color": "blue",
+          "line-opacity": 0.5,
+          "line-offset": ["case", ["get", "left"], -5, 5],
+        }}
+      />
+    </GeoJSON>
 
-      <GeoJSON data={ways}>
-        <LineLayer
-          id="ways"
-          beforeId="Road labels"
-          manageHoverState
-          hoverCursor="pointer"
-          eventsIfTopMost
-          filter={filterWays(
-            onlySeverances,
-            onlyModified,
-            showProblems,
-            showServiceRoads,
-            showProblemTypes,
-            showKinds,
-          )}
-          paint={{
-            "line-width": roadLineWidth(0),
-            "line-color": constructMatchExpression(
-              ["get", "kind"],
-              colors,
-              "cyan",
-            ),
-          }}
-        />
-      </GeoJSON>
+    <GeoJSON data={ways}>
+      <LineLayer
+        id="ways"
+        beforeId="Road labels"
+        manageHoverState
+        hoverCursor="pointer"
+        eventsIfTopMost
+        filter={filterWays(
+          onlySeverances,
+          onlyModified,
+          showProblems,
+          showServiceRoads,
+          showProblemTypes,
+          showKinds,
+        )}
+        paint={{
+          "line-width": roadLineWidth(0),
+          "line-color": constructMatchExpression(
+            ["get", "kind"],
+            colors,
+            "cyan",
+          ),
+        }}
+      />
+    </GeoJSON>
 
-      <GeoJSON data={nodes}>
-        <CircleLayer
-          id="nodes"
-          beforeId="Road labels"
-          manageHoverState
-          paint={{
-            "circle-radius": 7,
-            "circle-color": ["case", ["get", "is_crossing"], "yellow", "grey"],
-            "circle-opacity": [
-              "case",
-              ["boolean", ["get", "is_crossing"]],
-              onlyModified ? ["case", ["get", "modified"], 1.0, 0.5] : 1.0,
-              0,
-            ],
-            "circle-stroke-color": ["case", ["has", "tags"], "black", "grey"],
-            "circle-stroke-width": 1,
-          }}
-          layout={{
-            visibility: showNodes ? "visible" : "none",
-          }}
-        >
-          <Popup openOn="hover">
-            {#snippet children({ data })}
-              {@const props = data?.properties ?? {}}
-              <h4>Node {props.id}</h4>
-              <p>Ways: {props.way_ids}</p>
-              <table>
+    <GeoJSON data={nodes}>
+      <CircleLayer
+        id="nodes"
+        beforeId="Road labels"
+        manageHoverState
+        paint={{
+          "circle-radius": 7,
+          "circle-color": ["case", ["get", "is_crossing"], "yellow", "grey"],
+          "circle-opacity": [
+            "case",
+            ["boolean", ["get", "is_crossing"]],
+            onlyModified ? ["case", ["get", "modified"], 1.0, 0.5] : 1.0,
+            0,
+          ],
+          "circle-stroke-color": ["case", ["has", "tags"], "black", "grey"],
+          "circle-stroke-width": 1,
+        }}
+        layout={{
+          visibility: showNodes ? "visible" : "none",
+        }}
+      >
+        <Popup openOn="hover">
+          {#snippet children({ data })}
+            {@const props = data?.properties ?? {}}
+            <h4>Node {props.id}</h4>
+            <p>Ways: {props.way_ids}</p>
+            <table>
+              <tbody>
                 {#each Object.entries(JSON.parse(props.tags || "{}")) as [key, value]}
                   <tr>
                     <td>{key}</td>
                     <td>{value}</td>
                   </tr>
                 {/each}
-              </table>
-            {/snippet}
-          </Popup>
-        </CircleLayer>
-      </GeoJSON>
+              </tbody>
+            </table>
+          {/snippet}
+        </Popup>
+      </CircleLayer>
+    </GeoJSON>
 
-      <GeoJSON data={pinnedWaySides}>
-        <SymbolLayer
-          id="pinned-sides"
-          paint={{
-            "text-color": "black",
-            "text-halo-color": "cyan",
-            "text-halo-width": 4,
-          }}
-          layout={{
-            "text-field": ["get", "side"],
-            "text-size": 16,
-            "symbol-placement": "line",
-          }}
-        />
-      </GeoJSON>
+    <GeoJSON data={pinnedWaySides}>
+      <SymbolLayer
+        id="pinned-sides"
+        paint={{
+          "text-color": "black",
+          "text-halo-color": "cyan",
+          "text-halo-width": 4,
+        }}
+        layout={{
+          "text-field": ["get", "side"],
+          "text-size": 16,
+          "symbol-placement": "line",
+        }}
+      />
+    </GeoJSON>
 
-      <GeoJSON data={showNodeOrder(pinnedWay)}>
-        <SymbolLayer
-          id="pinned-node-order"
-          paint={{
-            "text-color": "white",
-            "text-halo-color": "blue",
-            "text-halo-width": 5,
-          }}
-          layout={{
-            "text-field": ["get", "idx"],
-            "text-size": 16,
-            visibility: $debugMode ? "visible" : "none",
-          }}
-        />
-      </GeoJSON>
+    <GeoJSON data={showNodeOrder(pinnedWay)}>
+      <SymbolLayer
+        id="pinned-node-order"
+        paint={{
+          "text-color": "white",
+          "text-halo-color": "blue",
+          "text-halo-width": 5,
+        }}
+        layout={{
+          "text-field": ["get", "idx"],
+          "text-size": 16,
+          visibility: $debugMode ? "visible" : "none",
+        }}
+      />
+    </GeoJSON>
 
-      <GeoJSON data={drawProblemDetails}>
-        <CircleLayer
-          filter={isPoint}
-          paint={{
-            "circle-radius": 20,
-            "circle-color": ["get", "color"],
-            "circle-opacity": 0.5,
-          }}
-          layout={{
-            visibility: showProblemDetails ? "visible" : "none",
-          }}
-        />
+    <GeoJSON data={drawProblemDetails}>
+      <CircleLayer
+        filter={isPoint}
+        paint={{
+          "circle-radius": 20,
+          "circle-color": ["get", "color"],
+          "circle-opacity": 0.5,
+        }}
+        layout={{
+          visibility: showProblemDetails ? "visible" : "none",
+        }}
+      />
 
-        <LineLayer
-          filter={isLine}
-          paint={{
-            "line-width": roadLineWidth(5),
-            "line-color": ["get", "color"],
-            "line-opacity": 0.5,
-          }}
-          layout={{
-            visibility: showProblemDetails ? "visible" : "none",
-          }}
-        />
-      </GeoJSON>
+      <LineLayer
+        filter={isLine}
+        paint={{
+          "line-width": roadLineWidth(5),
+          "line-color": ["get", "color"],
+          "line-opacity": 0.5,
+        }}
+        layout={{
+          visibility: showProblemDetails ? "visible" : "none",
+        }}
+      />
+    </GeoJSON>
 
-      <Control position="top-right">
-        <div class="card" style:width="250px" style:padding="8px">
-          <div class="card-header">Filters</div>
-          <div class="card-body">
-            <Checkbox bind:checked={$debugMode}>Debug mode</Checkbox>
+    <Control position="top-right">
+      <div class="card" style:width="250px" style:padding="8px">
+        <div class="card-header">Filters</div>
+        <div class="card-body">
+          <Checkbox bind:checked={$debugMode}>Debug mode</Checkbox>
 
-            <Checkbox bind:checked={showNodes}>Nodes</Checkbox>
+          <Checkbox bind:checked={showNodes}>Nodes</Checkbox>
 
-            <Checkbox bind:checked={onlyModified}>
-              Only modified objects
-            </Checkbox>
+          <Checkbox bind:checked={onlyModified}>Only modified objects</Checkbox>
 
-            <Checkbox bind:checked={onlySeverances}>
-              Only show major roads
-            </Checkbox>
+          <Checkbox bind:checked={onlySeverances}>
+            Only show major roads
+          </Checkbox>
 
-            <Checkbox bind:checked={showServiceRoads}>
-              Show service roads
-            </Checkbox>
+          <Checkbox bind:checked={showServiceRoads}>
+            Show service roads
+          </Checkbox>
 
-            <div class="card mb-3">
-              <div class="card-header">
-                <Checkbox bind:checked={showProblems}>
-                  Only show problems
-                </Checkbox>
-              </div>
-              {#if showProblems}
-                <div class="card-body">
-                  {#each problemTypes as key}
-                    <Checkbox bind:checked={showProblemTypes[key]}>
-                      {key}
-                    </Checkbox>
-                  {/each}
-                </div>
-              {/if}
+          <div class="card mb-3">
+            <div class="card-header">
+              <Checkbox bind:checked={showProblems}>
+                Only show problems
+              </Checkbox>
             </div>
-
-            <Metrics bind:showKinds />
+            {#if showProblems}
+              <div class="card-body">
+                {#each problemTypes as key}
+                  <Checkbox bind:checked={showProblemTypes[key]}>
+                    {key}
+                  </Checkbox>
+                {/each}
+              </div>
+            {/if}
           </div>
+
+          <Metrics bind:showKinds />
         </div>
-      </Control>
-    </div>
+      </div>
+    </Control>
   {/snippet}
 </SplitComponent>

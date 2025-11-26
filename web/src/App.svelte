@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { run } from "svelte/legacy";
-
   import "bootstrap/dist/css/bootstrap.min.css";
   import "bootstrap/dist/js/bootstrap.min.js";
   import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -11,7 +9,7 @@
   import logo from "../assets/logo.svg?url";
   import arrow from "../assets/arrow.png?url";
   import { MapLibre } from "svelte-maplibre";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { backend } from "./";
   import type { Map } from "maplibre-gl";
   import {
@@ -20,35 +18,56 @@
     Geocoder,
     StandardControls,
   } from "svelte-utils/map";
-  import {
-    mapContents,
-    sidebarContents,
-    Layout,
-  } from "svelte-utils/two_column_layout";
+  import { Layout, leftTarget } from "svelte-utils/two_column_layout";
   import { Modal } from "svelte-utils";
   import * as backendPkg from "../../backend/pkg";
   import MainMode from "./main/MainMode.svelte";
 
   let map: Map | undefined = $state();
-  let style = $state(basemapStyles["Maptiler OpenStreetMap"]);
+  let loaded = $state(false);
+  let basemap = $state("Maptiler OpenStreetMap");
   let show = $state(true);
 
   onMount(async () => {
     await backendPkg.default();
   });
 
-  let sidebarDiv: HTMLDivElement = $state();
-  let mapDiv: HTMLDivElement = $state();
-  run(() => {
-    if (sidebarDiv && $sidebarContents) {
-      sidebarDiv.innerHTML = "";
-      sidebarDiv.appendChild($sidebarContents);
-    }
-  });
-  run(() => {
-    if (mapDiv && $mapContents) {
-      mapDiv.innerHTML = "";
-      mapDiv.appendChild($mapContents);
+  // svelte-ignore state_referenced_locally
+  let initialStyle = basemapStyles.get(basemap)!;
+  // TODO Upstream to svelte-maplibre. It feels a bit brittle how we detect the sources and layers created here, vs from the basemap
+  $effect(() => {
+    if (basemap) {
+      untrack(() => {
+        map?.setStyle(basemapStyles.get(basemap)!, {
+          transformStyle: (previousStyle, nextStyle) => {
+            if (!previousStyle) {
+              return nextStyle;
+            }
+
+            let customLayers = previousStyle.layers.filter((l) =>
+              ["circle-", "line-", "fill-", "heatmap-", "symbol-"].some(
+                (prefix) => l.id.startsWith(prefix),
+              ),
+            );
+            let layers = nextStyle.layers.concat(customLayers);
+            let sources = nextStyle.sources;
+
+            for (let [key, value] of Object.entries(
+              previousStyle.sources || {},
+            )) {
+              if (key.startsWith("geojson-") || key.startsWith("heatmap")) {
+                sources[key] = value;
+              }
+            }
+
+            return {
+              ...nextStyle,
+              sources: sources,
+              layers: layers,
+            };
+          },
+        });
+      });
     }
   });
 </script>
@@ -77,7 +96,7 @@
       <Auth />
 
       {#if map}
-        <div bind:this={sidebarDiv}></div>
+        <div bind:this={leftTarget.value}></div>
       {/if}
     </div>
   {/snippet}
@@ -85,24 +104,20 @@
   {#snippet main()}
     <div style="position:relative; width: 100%; height: 100vh;">
       <MapLibre
-        {style}
+        style={initialStyle}
         hash
         bind:map
-        on:error={(e) => {
-          // @ts-ignore ErrorEvent isn't exported
-          console.log(e.detail.error);
-        }}
+        bind:loaded
+        onerror={(e) => console.log(e.error)}
         images={[{ id: "arrow", url: arrow }]}
       >
         <StandardControls {map} />
-        <Geocoder {map} country={undefined} apiKey="MZEJTanw3WpxRvt7qDfo" />
+        <Geocoder {map} {loaded} />
         <!--<MapContextMenu {map} />-->
-        <Basemaps bind:style choice="Maptiler OpenStreetMap" />
+        <Basemaps bind:basemap />
 
         {#if map}
           <ReportProblem {map} />
-
-          <div bind:this={mapDiv}></div>
 
           {#if $backend}
             <MainMode {map} />
